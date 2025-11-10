@@ -5,14 +5,18 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math/rand/v2"
+	"net/http"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
+	"time"
 
-	"github.com/neatflowcv/cepher/pkg/cephcli"
+	"github.com/neatflowcv/cepher/internal/app/flow"
+	"github.com/neatflowcv/cepher/internal/pkg/client/core"
+	"github.com/neatflowcv/cepher/internal/pkg/idgenerator/ulid"
+	"github.com/neatflowcv/cepher/internal/pkg/repository/file"
 	"github.com/neatflowcv/cepher/pkg/cephrest"
-	"github.com/neatflowcv/cepher/pkg/cephsetup"
 )
 
 func version() string {
@@ -84,38 +88,36 @@ func LoadCephCLIConfig() (*CephCLIConfig, error) {
 func main() {
 	log.Println("version", version())
 
-	config, err := LoadCephCLIConfig()
+	const (
+		timeout = 10 * time.Second
+	)
+
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		log.Panicf("failed to load config: %v", err)
+		log.Fatalf("failed to get home directory: %v", err)
 	}
 
-	rand.Shuffle(len(config.Hosts), func(i, j int) {
-		config.Hosts[i], config.Hosts[j] = config.Hosts[j], config.Hosts[i]
-	})
+	storagePath := filepath.Join(homeDir, ".local/share/cepher")
 
-	tempDir, err := os.MkdirTemp("", "cepher")
+	const permission = 0750
+
+	err = os.MkdirAll(storagePath, permission)
 	if err != nil {
-		log.Panicf("failed to create temporary directory: %v", err)
+		log.Fatalf("failed to create storage directory: %v", err)
 	}
 
-	defer func() {
-		err := os.RemoveAll(tempDir)
-		if err != nil {
-			log.Printf("failed to remove temporary directory: %v", err)
-		}
-	}()
+	repository := file.NewRepository(storagePath)
+	service := flow.NewService(ulid.NewGenerator(), core.NewFactory(), repository)
+	handler := NewHandler(service)
 
-	err = cephsetup.Setup(tempDir, config.Hosts, config.Keyring)
-	if err != nil {
-		log.Panicf("failed to setup ceph: %v", err)
+	server := &http.Server{ //nolint:exhaustruct
+		ReadHeaderTimeout: timeout,
+		Addr:              ":8080",
+		Handler:           handler,
 	}
 
-	client := cephcli.NewClient(tempDir, "20.1.1")
-
-	health, err := client.GetHealth(context.Background())
+	err = server.ListenAndServe()
 	if err != nil {
-		log.Panicf("failed to get health detail from ceph: %v", err)
+		log.Fatal(err)
 	}
-
-	log.Println("health", health)
 }

@@ -6,3 +6,12 @@ linters:
     - depguard
     - tagliatelle
     - wsl # deprecated
+    - musttag
+  settings:
+    ireturn:
+      allow:
+        - ResponseObject$
+        - error
+        - empty
+    varnamelen:
+      min-name-length: 2

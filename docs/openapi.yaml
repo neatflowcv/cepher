@@ -1,0 +1,108 @@
+openapi: 3.0.4
+info:
+  title: cepher
+  version: 0.0.0
+  description: cepher
+  contact:
+    name: Support
+    email: sup@rest.rodeo
+servers:
+  - url: https://api.rest.rodeo
+    description: Live
+tags:
+  - name: cluster
+paths:
+  /clusters:
+    post:
+      description: register cluster
+      operationId: register.cluster
+      tags:
+        - cluster
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterCluster"
+      responses:
+        "201":
+          description: cluster registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cluster"
+        "400":
+          description: bad requests
+        "500":
+          description: internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    get:
+      description: list clusters
+      operationId: list.clusters
+      tags:
+        - cluster
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Cluster"
+        "204":
+          description: no contents
+        "500":
+          description: internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+    RegisterCluster:
+      type: object
+      properties:
+        name:
+          type: string
+        hosts:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        key:
+          type: string
+      required:
+        - name
+        - hosts
+        - key
+    Cluster:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+            - HEALTH_OK
+            - HEALTH_WARN
+            - HEALTH_ERR
+        is_stable:
+          type: boolean
+          description: 일정 시간 이상 HEALTH_OK가 유지되는 상태
+      required:
+        - id
+        - name
+        - status
+        - is_stable
