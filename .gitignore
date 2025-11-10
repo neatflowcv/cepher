@@ -1,3 +1,4 @@
 /vendor/
 /cepher
 /.vscode/launch.json
+/.env
