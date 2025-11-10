@@ -2,18 +2,15 @@ package main
 
 import (
 	"context"
-	"embed"
-	"fmt"
 	"log"
 	"math/rand/v2"
 	"os"
-	"path/filepath"
 	"runtime/debug"
 	"strings"
-	"text/template"
 
 	"github.com/neatflowcv/cepher/pkg/cephcli"
 	"github.com/neatflowcv/cepher/pkg/cephrest"
+	"github.com/neatflowcv/cepher/pkg/cephsetup"
 )
 
 func version() string {
@@ -56,31 +53,23 @@ func Main2() {
 	log.Println("logged out from ceph")
 }
 
-//go:embed templates/*.tmpl
-var templates embed.FS
-
 func main() {
 	log.Println("version", version())
-
-	tmpl, err := template.ParseFS(templates, "templates/*.tmpl")
-	if err != nil {
-		log.Panicf("failed to parse templates: %v", err)
-	}
 
 	hosts := os.Getenv("CEPH_MON_HOSTS")
 	if hosts == "" {
 		log.Panicf("CEPH_MON_HOSTS must be set")
 	}
 
-	monHosts := strings.Split(hosts, ",")
-	rand.Shuffle(len(monHosts), func(i, j int) {
-		monHosts[i], monHosts[j] = monHosts[j], monHosts[i]
-	})
-
 	keyring := os.Getenv("CEPH_KEYRING")
 	if keyring == "" {
 		log.Panicf("CEPH_KEYRING must be set")
 	}
+
+	monHosts := strings.Split(hosts, ",")
+	rand.Shuffle(len(monHosts), func(i, j int) {
+		monHosts[i], monHosts[j] = monHosts[j], monHosts[i]
+	})
 
 	tempDir, err := os.MkdirTemp("", "cepher")
 	if err != nil {
@@ -94,18 +83,9 @@ func main() {
 		}
 	}()
 
-	cephConf := filepath.Join(tempDir, "ceph.conf")
-
-	err = writeTemplate(tmpl, cephConf, "ceph.conf.tmpl", strings.Join(monHosts, ","))
+	err = cephsetup.Setup(tempDir, monHosts, keyring)
 	if err != nil {
-		log.Panicf("failed to write ceph.conf: %v", err)
-	}
-
-	keyringFile := filepath.Join(tempDir, "ceph.client.admin.keyring")
-
-	err = writeTemplate(tmpl, keyringFile, "ceph.client.admin.keyring.tmpl", keyring)
-	if err != nil {
-		log.Panicf("failed to write keyring: %v", err)
+		log.Panicf("failed to setup ceph: %v", err)
 	}
 
 	client := cephcli.NewClient(tempDir, "20.1.1")
@@ -116,25 +96,4 @@ func main() {
 	}
 
 	log.Println("health", health)
-}
-
-func writeTemplate(tmpl *template.Template, path string, templateName string, data any) error {
-	file, err := os.Create(filepath.Clean(path))
-	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
-	}
-
-	defer func() {
-		err := file.Close()
-		if err != nil {
-			log.Printf("failed to close file: %v", err)
-		}
-	}()
-
-	err = tmpl.ExecuteTemplate(file, templateName, data)
-	if err != nil {
-		return fmt.Errorf("failed to execute template: %w", err)
-	}
-
-	return nil
 }
