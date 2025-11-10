@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log"
 	"math/rand/v2"
 	"os"
@@ -53,22 +55,42 @@ func Main2() {
 	log.Println("logged out from ceph")
 }
 
-func main() {
-	log.Println("version", version())
+type CephCLIConfig struct {
+	Hosts   []string
+	Keyring string
+}
 
+var (
+	ErrRequiredEnvironment = errors.New("required environment is not set")
+)
+
+func LoadCephCLIConfig() (*CephCLIConfig, error) {
 	hosts := os.Getenv("CEPH_MON_HOSTS")
 	if hosts == "" {
-		log.Panicf("CEPH_MON_HOSTS must be set")
+		return nil, fmt.Errorf("%w: CEPH_MON_HOSTS", ErrRequiredEnvironment)
 	}
 
 	keyring := os.Getenv("CEPH_KEYRING")
 	if keyring == "" {
-		log.Panicf("CEPH_KEYRING must be set")
+		return nil, fmt.Errorf("%w: CEPH_KEYRING", ErrRequiredEnvironment)
 	}
 
-	monHosts := strings.Split(hosts, ",")
-	rand.Shuffle(len(monHosts), func(i, j int) {
-		monHosts[i], monHosts[j] = monHosts[j], monHosts[i]
+	return &CephCLIConfig{
+		Hosts:   strings.Split(hosts, ","),
+		Keyring: keyring,
+	}, nil
+}
+
+func main() {
+	log.Println("version", version())
+
+	config, err := LoadCephCLIConfig()
+	if err != nil {
+		log.Panicf("failed to load config: %v", err)
+	}
+
+	rand.Shuffle(len(config.Hosts), func(i, j int) {
+		config.Hosts[i], config.Hosts[j] = config.Hosts[j], config.Hosts[i]
 	})
 
 	tempDir, err := os.MkdirTemp("", "cepher")
@@ -83,7 +105,7 @@ func main() {
 		}
 	}()
 
-	err = cephsetup.Setup(tempDir, monHosts, keyring)
+	err = cephsetup.Setup(tempDir, config.Hosts, config.Keyring)
 	if err != nil {
 		log.Panicf("failed to setup ceph: %v", err)
 	}
