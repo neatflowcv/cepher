@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -121,30 +120,6 @@ func (c *Client) GetHealthFull(ctx context.Context, token string) error {
 	}
 
 	log.Println("cluster", string(content))
-
-	return nil
-}
-
-func (c *Client) HealthCheck(ctx context.Context) error {
-	url := c.apiURL + "/api/auth"
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	auth := fmt.Sprintf("%s:%s", c.username, c.password)
-	encodedAuth := base64.StdEncoding.EncodeToString([]byte(auth))
-	req.Header.Set("Authorization", "Basic "+encodedAuth)
-
-	code, content, err := doRequest(c.client, req)
-	if err != nil {
-		return fmt.Errorf("failed to execute request: %w", err)
-	}
-
-	if code != http.StatusOK {
-		return fmt.Errorf("%w: %d: %s", ErrUnexpectedStatusCode, code, string(content))
-	}
 
 	return nil
 }
