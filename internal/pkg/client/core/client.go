@@ -2,10 +2,10 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/neatflowcv/cepher/internal/pkg/client"
 	"github.com/neatflowcv/cepher/internal/pkg/domain"
@@ -34,22 +34,17 @@ func (c *Client) Close() {
 }
 
 func (c *Client) HealthCheck(ctx context.Context) (domain.ClusterStatus, string, error) {
-	health, err := c.client.GetHealth(ctx)
+	health, err := c.client.HealthDetail(ctx)
 	if err != nil {
 		return domain.ClusterStatusUnknown, "", fmt.Errorf("failed to get health: %w", err)
 	}
 
-	const size = 2
-
-	sp := strings.SplitN(health, " ", size)
-	status := strings.TrimSpace(sp[0])
-
-	detail := ""
-	if len(sp) > 1 {
-		detail = sp[1]
+	content, err := json.MarshalIndent(health, "", "  ")
+	if err != nil {
+		return domain.ClusterStatusUnknown, "", fmt.Errorf("failed to marshal health: %w", err)
 	}
 
-	return domain.ClusterStatus(status), detail, nil
+	return domain.ClusterStatus(health.Status), string(content), nil
 }
 
 func (c *Client) ListMonitors(ctx context.Context) ([]*domain.Address, error) {

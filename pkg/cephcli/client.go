@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
-	"strings"
 )
 
 type Client struct {
@@ -21,12 +20,12 @@ func NewClient(path, version string) *Client {
 	}
 }
 
-func (c *Client) GetHealth(ctx context.Context) (string, error) {
+func (c *Client) HealthDetail(ctx context.Context) (*HealthDetail, error) {
 	image := "quay.io/ceph/ceph:v" + c.version
 	volume := c.path + ":/etc/ceph"
 	cmd := exec.CommandContext( //nolint:gosec
 		ctx,
-		"podman", "run", "--rm", "-v", volume, image, "ceph", "health", "detail",
+		"podman", "run", "--rm", "-v", volume, image, "ceph", "health", "detail", "-f", "json",
 	)
 
 	var (
@@ -39,10 +38,17 @@ func (c *Client) GetHealth(ctx context.Context) (string, error) {
 
 	err := cmd.Run()
 	if err != nil {
-		return "", fmt.Errorf("failed to execute command: %w: %s", err, stderr.String())
+		return nil, fmt.Errorf("failed to execute command: %w: %s", err, stderr.String())
 	}
 
-	return strings.TrimSpace(stdout.String()), nil
+	var ret HealthDetail
+
+	err = json.NewDecoder(&stdout).Decode(&ret)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode health detail: %w", err)
+	}
+
+	return &ret, nil
 }
 
 func (c *Client) MonDump(ctx context.Context) (*MonDump, error) {
