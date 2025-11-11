@@ -89,7 +89,7 @@ func (h *Handler) RegisterCluster(
 		}, nil
 	}
 
-	h.addJob(cluster.ID)
+	h.addJob(cluster.ID) //nolint:contextcheck
 
 	return api.RegisterCluster201JSONResponse{
 		Id:       cluster.ID,
@@ -173,4 +173,20 @@ func (h *Handler) addJob(clusterID string) {
 
 	h.jobSliders[clusterID] = NewSlider(0, maxValue, maxValue)
 	h.afterJobRuns(uuid.Nil, clusterID)
+
+	_, err := h.scheduler.NewJob(
+		gocron.DailyJob(1, gocron.NewAtTimes(gocron.NewAtTime(0, 0, 0))),
+		gocron.NewTask(func() {
+			log.Printf("UpdateMonitor at %v", time.Now())
+
+			err := h.service.UpdateMonitor(context.Background(), clusterID)
+			if err != nil {
+				log.Printf("failed to update monitor %s: %v", clusterID, err)
+			}
+		}),
+		gocron.JobOption(gocron.WithStartImmediately()),
+	)
+	if err != nil {
+		log.Printf("failed to create job: %v", err)
+	}
 }

@@ -14,4 +14,5 @@ type Client interface {
 	Close()
 
 	HealthCheck(ctx context.Context) (domain.ClusterStatus, string, error)
+	ListMonitors(ctx context.Context) ([]*domain.Address, error)
 }

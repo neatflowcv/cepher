@@ -51,3 +51,35 @@ func (c *Client) HealthCheck(ctx context.Context) (domain.ClusterStatus, string,
 
 	return domain.ClusterStatus(status), detail, nil
 }
+
+func (c *Client) ListMonitors(ctx context.Context) ([]*domain.Address, error) {
+	dump, err := c.client.MonDump(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list monitors: %w", err)
+	}
+
+	var ret []*domain.Address
+
+	for _, mon := range dump.Mons {
+		var (
+			maxAddr string
+			maxType string
+		)
+
+		for _, addr := range mon.PublicAddrs.Addrvec {
+			if addr.Type > maxType {
+				maxType = addr.Type
+				maxAddr = addr.Addr
+			}
+		}
+
+		address, err := domain.NewAddressFromHost(maxAddr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create domain address: %w", err)
+		}
+
+		ret = append(ret, address)
+	}
+
+	return ret, nil
+}

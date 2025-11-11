@@ -3,6 +3,7 @@ package cephcli
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -42,4 +43,35 @@ func (c *Client) GetHealth(ctx context.Context) (string, error) {
 	}
 
 	return strings.TrimSpace(stdout.String()), nil
+}
+
+func (c *Client) MonDump(ctx context.Context) (*MonDump, error) {
+	image := "quay.io/ceph/ceph:v" + c.version
+	volume := c.path + ":/etc/ceph"
+	cmd := exec.CommandContext( //nolint:gosec
+		ctx,
+		"podman", "run", "--rm", "-v", volume, image, "ceph", "mon", "dump", "-f", "json",
+	)
+
+	var (
+		stdout bytes.Buffer
+		stderr bytes.Buffer
+	)
+
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute command: %w: %s", err, stderr.String())
+	}
+
+	var ret MonDump
+
+	err = json.NewDecoder(&stdout).Decode(&ret)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode mon dump: %w", err)
+	}
+
+	return &ret, nil
 }

@@ -123,3 +123,33 @@ func (s *Service) RefreshCluster(ctx context.Context, id string, now time.Time) 
 
 	return changedCluster.IsOK(), nil
 }
+
+func (s *Service) UpdateMonitor(ctx context.Context, id string) error {
+	cluster, err := s.repository.GetCluster(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to get cluster: %w", err)
+	}
+
+	client, err := s.factory.NewClient(ctx, cluster)
+	if err != nil {
+		return fmt.Errorf("failed to create client: %w", err)
+	}
+	defer client.Close()
+
+	monitors, err := client.ListMonitors(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list monitors: %w", err)
+	}
+
+	cluster, err = cluster.SetHosts(monitors)
+	if err != nil {
+		return fmt.Errorf("failed to set hosts: %w", err)
+	}
+
+	err = s.repository.UpdateCluster(ctx, cluster)
+	if err != nil {
+		return fmt.Errorf("failed to update cluster: %w", err)
+	}
+
+	return nil
+}
