@@ -31,7 +31,12 @@ func (f *Factory) NewClient(ctx context.Context, cluster *domain.Cluster) (clien
 		hosts[i], hosts[j] = hosts[j], hosts[i]
 	})
 
-	err = cephsetup.Setup(tempDir, hosts, cluster.Key())
+	var hostStrings []string
+	for _, host := range hosts {
+		hostStrings = append(hostStrings, host.String())
+	}
+
+	err = cephsetup.Setup(tempDir, hostStrings, cluster.Key())
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup ceph: %w", err)
 	}

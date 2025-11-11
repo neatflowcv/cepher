@@ -29,8 +29,13 @@ func NewService(idGenerator idgenerator.Generator, factory client.Factory, repos
 func (s *Service) RegisterCluster(ctx context.Context, registerCluster *RegisterCluster) (*Cluster, error) {
 	id := s.idGenerator.GenerateID()
 
+	addresses, err := domain.NewAddressesFromHosts(registerCluster.Hosts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create domain addresses: %w", err)
+	}
+
 	cluster, err := domain.NewCluster(
-		id, registerCluster.Name, registerCluster.Hosts, registerCluster.Key,
+		id, registerCluster.Name, addresses, registerCluster.Key,
 		domain.ClusterStatusUnknown, registerCluster.Now,
 		"",
 	)

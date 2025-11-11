@@ -18,10 +18,15 @@ type Cluster struct {
 }
 
 func NewCluster(cluster *domain.Cluster) *Cluster {
+	var hosts []string
+	for _, host := range cluster.Hosts() {
+		hosts = append(hosts, host.String())
+	}
+
 	return &Cluster{
 		ID:          cluster.ID(),
 		Name:        cluster.Name(),
-		Hosts:       cluster.Hosts(),
+		Hosts:       hosts,
 		Key:         cluster.Key(),
 		Status:      string(cluster.Status()),
 		LastBadTime: cluster.LastBadTime(),
@@ -30,8 +35,13 @@ func NewCluster(cluster *domain.Cluster) *Cluster {
 }
 
 func (c *Cluster) ToDomain() (*domain.Cluster, error) {
+	addresses, err := domain.NewAddressesFromHosts(c.Hosts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create domain addresses: %w", err)
+	}
+
 	cluster, err := domain.NewCluster(
-		c.ID, c.Name, c.Hosts, c.Key, domain.ClusterStatus(c.Status), c.LastBadTime, c.Detail,
+		c.ID, c.Name, addresses, c.Key, domain.ClusterStatus(c.Status), c.LastBadTime, c.Detail,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create domain cluster: %w", err)

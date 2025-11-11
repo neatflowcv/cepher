@@ -1,16 +1,14 @@
 package domain
 
 import (
-	"net"
 	"reflect"
-	"strconv"
 	"time"
 )
 
 type Cluster struct {
 	id          string
 	name        string
-	hosts       []string
+	hosts       []*Address
 	key         string
 	status      ClusterStatus
 	lastBadTime time.Time
@@ -20,7 +18,7 @@ type Cluster struct {
 func NewCluster(
 	id string,
 	name string,
-	hosts []string,
+	hosts []*Address,
 	key string,
 	status ClusterStatus,
 	lastBadTime time.Time,
@@ -74,18 +72,13 @@ func (c *Cluster) SetStatus(status ClusterStatus, detail string, now time.Time) 
 	return ret, nil
 }
 
-func (c *Cluster) SetHosts(hosts []string) (*Cluster, error) {
+func (c *Cluster) SetHosts(hosts []*Address) (*Cluster, error) {
 	if reflect.DeepEqual(c.hosts, hosts) {
 		return c, nil
 	}
 
 	ret := c.clone()
 	ret.hosts = hosts
-
-	err := ret.validate()
-	if err != nil {
-		return nil, err
-	}
 
 	return ret, nil
 }
@@ -102,7 +95,7 @@ func (c *Cluster) Name() string {
 	return c.name
 }
 
-func (c *Cluster) Hosts() []string {
+func (c *Cluster) Hosts() []*Address {
 	return c.hosts
 }
 
@@ -136,9 +129,8 @@ func (c *Cluster) validate() error {
 	}
 
 	for _, host := range c.hosts {
-		err := validateAddress(host)
-		if err != nil {
-			return err
+		if host == nil {
+			return InvalidParameterError("hosts")
 		}
 	}
 
@@ -164,26 +156,4 @@ func (c *Cluster) clone() *Cluster {
 		lastBadTime: c.lastBadTime,
 		detail:      c.detail,
 	}
-}
-
-func validateAddress(address string) error {
-	if address == "" {
-		return InvalidParameterError("address")
-	}
-
-	host, portStr, err := net.SplitHostPort(address)
-	if err != nil {
-		return InvalidParameterError("address")
-	}
-
-	if net.ParseIP(host) == nil {
-		return InvalidParameterError("address")
-	}
-
-	port, err := strconv.Atoi(portStr)
-	if err != nil || port < 1 || port > 65535 {
-		return InvalidParameterError("address")
-	}
-
-	return nil
 }
