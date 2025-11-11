@@ -11,6 +11,7 @@ type Cluster struct {
 	Name     string
 	Status   string
 	IsStable bool
+	Detail   string
 }
 
 type RegisterCluster struct {
@@ -26,6 +27,7 @@ func NewCluster(cluster *domain.Cluster) *Cluster {
 		Name:     cluster.Name(),
 		Status:   string(cluster.Status()),
 		IsStable: domain.IsClusterStable(cluster, cluster.LastBadTime()),
+		Detail:   cluster.Detail(),
 	}
 }
 

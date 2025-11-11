@@ -20,7 +20,7 @@ func NewFactory() *Factory {
 	return &Factory{}
 }
 
-func (f *Factory) NewClient(ctx context.Context, cluster *domain.Cluster) (client.Client, error) { //nolint:ireturn
+func (f *Factory) NewClient(ctx context.Context, cluster *domain.Cluster) (client.Client, error) {
 	tempDir, err := os.MkdirTemp("", "cepher")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temporary directory: %w", err)

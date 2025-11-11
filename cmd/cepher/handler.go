@@ -60,7 +60,7 @@ func NewHandler(service *flow.Service) (*Handler, error) {
 	return handler, nil
 }
 
-func (h *Handler) Get() http.Handler { //nolint:ireturn
+func (h *Handler) Get() http.Handler {
 	return api.HandlerFromMux(api.NewStrictHandler(h, nil), chi.NewMux())
 }
 
@@ -96,6 +96,7 @@ func (h *Handler) RegisterCluster(
 		Name:     cluster.Name,
 		Status:   api.ClusterStatus(cluster.Status),
 		IsStable: cluster.IsStable,
+		Detail:   &cluster.Detail,
 	}, nil
 }
 
@@ -123,6 +124,7 @@ func (h *Handler) ListClusters(
 			Name:     cluster.Name,
 			Status:   api.ClusterStatus(cluster.Status),
 			IsStable: cluster.IsStable,
+			Detail:   &cluster.Detail,
 		})
 	}
 

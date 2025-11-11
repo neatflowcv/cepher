@@ -22,7 +22,9 @@ const (
 
 // Cluster defines model for Cluster.
 type Cluster struct {
-	Id string `json:"id"`
+	// Detail cluster 상태가 좋지 않을때, 해당 이유에 대해 보여준다.
+	Detail *string `json:"detail,omitempty"`
+	Id     string  `json:"id"`
 
 	// IsStable 일정 시간 이상 HEALTH_OK가 유지되는 상태
 	IsStable bool          `json:"is_stable"`

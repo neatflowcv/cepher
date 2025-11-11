@@ -101,6 +101,9 @@ components:
         is_stable:
           type: boolean
           description: 일정 시간 이상 HEALTH_OK가 유지되는 상태
+        detail:
+          type: string
+          description: cluster 상태가 좋지 않을때, 해당 이유에 대해 보여준다.
       required:
         - id
         - name

@@ -8,11 +8,7 @@ linters:
     - wsl # deprecated
     - musttag
     - prealloc
+    - ireturn # 버그 있음. auto fix할 때, 이상하게 동작해서 일단 제거
   settings:
-    ireturn:
-      allow:
-        - ResponseObject$
-        - error
-        - empty
     varnamelen:
       min-name-length: 2

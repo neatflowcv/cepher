@@ -63,6 +63,7 @@ func (s *Service) RegisterCluster(ctx context.Context, registerCluster *Register
 		Name:     cluster.Name(),
 		Status:   string(cluster.Status()),
 		IsStable: domain.IsClusterStable(cluster, registerCluster.Now),
+		Detail:   cluster.Detail(),
 	}, nil
 }
 
