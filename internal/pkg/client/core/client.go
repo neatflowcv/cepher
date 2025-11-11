@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -33,18 +32,13 @@ func (c *Client) Close() {
 	}
 }
 
-func (c *Client) HealthCheck(ctx context.Context) (domain.ClusterStatus, string, error) {
+func (c *Client) HealthCheck(ctx context.Context) (domain.ClusterStatus, any, error) {
 	health, err := c.client.HealthDetail(ctx)
 	if err != nil {
 		return domain.ClusterStatusUnknown, "", fmt.Errorf("failed to get health: %w", err)
 	}
 
-	content, err := json.MarshalIndent(health, "", "  ")
-	if err != nil {
-		return domain.ClusterStatusUnknown, "", fmt.Errorf("failed to marshal health: %w", err)
-	}
-
-	return domain.ClusterStatus(health.Status), string(content), nil
+	return domain.ClusterStatus(health.Status), health.Checks, nil
 }
 
 func (c *Client) ListMonitors(ctx context.Context) ([]*domain.Address, error) {

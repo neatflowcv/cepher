@@ -14,7 +14,7 @@ type Cluster struct {
 	Key         string
 	Status      string
 	LastBadTime time.Time
-	Detail      string
+	Detail      any
 }
 
 func NewCluster(cluster *domain.Cluster) *Cluster {

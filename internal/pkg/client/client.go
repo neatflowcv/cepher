@@ -13,6 +13,6 @@ type Factory interface {
 type Client interface {
 	Close()
 
-	HealthCheck(ctx context.Context) (domain.ClusterStatus, string, error)
+	HealthCheck(ctx context.Context) (domain.ClusterStatus, any, error)
 	ListMonitors(ctx context.Context) ([]*domain.Address, error)
 }

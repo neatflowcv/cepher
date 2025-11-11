@@ -12,7 +12,7 @@ type Cluster struct {
 	key         string
 	status      ClusterStatus
 	lastBadTime time.Time
-	detail      string
+	detail      any
 }
 
 func NewCluster(
@@ -22,7 +22,7 @@ func NewCluster(
 	key string,
 	status ClusterStatus,
 	lastBadTime time.Time,
-	detail string,
+	detail any,
 ) (*Cluster, error) {
 	ret := Cluster{
 		id:          id,
@@ -42,7 +42,7 @@ func NewCluster(
 	return &ret, nil
 }
 
-func (c *Cluster) SetStatus(status ClusterStatus, detail string, now time.Time) (*Cluster, error) {
+func (c *Cluster) SetStatus(status ClusterStatus, detail any, now time.Time) (*Cluster, error) {
 	if now.Before(c.lastBadTime) {
 		return nil, InvalidParameterError("lastBadTime")
 	}
@@ -54,7 +54,7 @@ func (c *Cluster) SetStatus(status ClusterStatus, detail string, now time.Time) 
 
 	if c.status == status &&
 		c.lastBadTime.Equal(lastBadTime) &&
-		c.detail == detail {
+		reflect.DeepEqual(c.detail, detail) {
 		return c, nil
 	}
 
@@ -111,7 +111,7 @@ func (c *Cluster) LastBadTime() time.Time {
 	return c.lastBadTime
 }
 
-func (c *Cluster) Detail() string {
+func (c *Cluster) Detail() any {
 	return c.detail
 }
 

@@ -11,7 +11,7 @@ type Cluster struct {
 	Name     string
 	Status   string
 	IsStable bool
-	Detail   string
+	Detail   any
 }
 
 type RegisterCluster struct {
