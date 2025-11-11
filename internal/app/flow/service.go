@@ -42,6 +42,7 @@ func (s *Service) RegisterCluster(ctx context.Context, registerCluster *Register
 	if err != nil {
 		return nil, fmt.Errorf("failed to create client: %w", err)
 	}
+	defer client.Close()
 
 	status, detail, err := client.HealthCheck(ctx)
 	if err != nil {
@@ -88,6 +89,7 @@ func (s *Service) RefreshCluster(ctx context.Context, id string, now time.Time) 
 	if err != nil {
 		return false, fmt.Errorf("failed to create client: %w", err)
 	}
+	defer client.Close()
 
 	var changedCluster *domain.Cluster
 
