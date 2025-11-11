@@ -3,4 +3,4 @@ generate:
   strict-server: true
   models: true
   chi-server: true
-output: api/gen.go
+output: gen.go
