@@ -63,3 +63,12 @@ func (s *Service) RegisterCluster(ctx context.Context, registerCluster *Register
 		IsStable: domain.IsClusterStable(cluster, registerCluster.Now),
 	}, nil
 }
+
+func (s *Service) ListClusters(ctx context.Context) ([]*Cluster, error) {
+	clusters, err := s.repository.ListClusters(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list clusters: %w", err)
+	}
+
+	return NewClusters(clusters), nil
+}

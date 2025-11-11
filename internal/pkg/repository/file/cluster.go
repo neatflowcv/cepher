@@ -1,6 +1,7 @@
 package file
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/neatflowcv/cepher/internal/pkg/domain"
@@ -26,4 +27,15 @@ func NewCluster(cluster *domain.Cluster) *Cluster {
 		LastBadTime: cluster.LastBadTime(),
 		Detail:      cluster.Detail(),
 	}
+}
+
+func (c *Cluster) ToDomain() (*domain.Cluster, error) {
+	cluster, err := domain.NewCluster(
+		c.ID, c.Name, c.Hosts, c.Key, domain.ClusterStatus(c.Status), c.LastBadTime, c.Detail,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create domain cluster: %w", err)
+	}
+
+	return cluster, nil
 }

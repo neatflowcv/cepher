@@ -55,5 +55,26 @@ func (h *Handler) ListClusters(
 	ctx context.Context,
 	request api.ListClustersRequestObject,
 ) (api.ListClustersResponseObject, error) {
-	panic("unimplemented")
+	clusters, err := h.service.ListClusters(ctx)
+	if err != nil {
+		return api.ListClusters500JSONResponse{ //nolint:nilerr
+			Message: err.Error(),
+		}, nil
+	}
+
+	if len(clusters) == 0 {
+		return api.ListClusters204Response{}, nil
+	}
+
+	var apiClusters []api.Cluster
+	for _, cluster := range clusters {
+		apiClusters = append(apiClusters, api.Cluster{
+			Id:       cluster.ID,
+			Name:     cluster.Name,
+			Status:   api.ClusterStatus(cluster.Status),
+			IsStable: cluster.IsStable,
+		})
+	}
+
+	return api.ListClusters200JSONResponse(apiClusters), nil
 }
