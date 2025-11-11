@@ -2,6 +2,7 @@ package domain
 
 import (
 	"net"
+	"reflect"
 	"strconv"
 	"time"
 )
@@ -44,19 +45,26 @@ func NewCluster(
 }
 
 func (c *Cluster) SetStatus(status ClusterStatus, detail string, now time.Time) (*Cluster, error) {
-	if now.After(c.lastBadTime) {
+	if now.Before(c.lastBadTime) {
 		return nil, InvalidParameterError("lastBadTime")
+	}
+
+	lastBadTime := c.lastBadTime
+	if !status.isHealthy() {
+		lastBadTime = now
+	}
+
+	if c.status == status &&
+		c.lastBadTime.Equal(lastBadTime) &&
+		c.detail == detail {
+		return c, nil
 	}
 
 	ret := c.clone()
 
 	ret.status = status
-	if !status.isHealthy() {
-		ret.lastBadTime = now
-		ret.detail = detail
-	} else {
-		ret.detail = ""
-	}
+	ret.lastBadTime = lastBadTime
+	ret.detail = detail
 
 	err := ret.validate()
 	if err != nil {
@@ -67,6 +75,10 @@ func (c *Cluster) SetStatus(status ClusterStatus, detail string, now time.Time) 
 }
 
 func (c *Cluster) SetHosts(hosts []string) (*Cluster, error) {
+	if reflect.DeepEqual(c.hosts, hosts) {
+		return c, nil
+	}
+
 	ret := c.clone()
 	ret.hosts = hosts
 
@@ -76,6 +88,10 @@ func (c *Cluster) SetHosts(hosts []string) (*Cluster, error) {
 	}
 
 	return ret, nil
+}
+
+func (c *Cluster) IsOK() bool {
+	return c.status.isHealthy()
 }
 
 func (c *Cluster) ID() string {

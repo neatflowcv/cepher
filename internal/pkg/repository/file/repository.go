@@ -98,3 +98,50 @@ func (r *Repository) ListClusters(ctx context.Context) ([]*domain.Cluster, error
 
 	return ret, nil
 }
+
+func (r *Repository) GetCluster(ctx context.Context, id string) (*domain.Cluster, error) {
+	path := filepath.Clean(filepath.Join(r.path, id+".json"))
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, repository.ErrClusterNotFound
+		}
+
+		return nil, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	var cluster Cluster
+
+	err = json.Unmarshal(data, &cluster)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal cluster file %s: %w", path, err)
+	}
+
+	dCluster, err := cluster.ToDomain()
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert cluster to domain: %w", err)
+	}
+
+	return dCluster, nil
+}
+
+func (r *Repository) UpdateCluster(ctx context.Context, dCluster *domain.Cluster) error {
+	path := filepath.Join(r.path, dCluster.ID()+".json")
+
+	cluster := NewCluster(dCluster)
+
+	data, err := json.MarshalIndent(cluster, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal cluster: %w", err)
+	}
+
+	const permission = 0600
+
+	err = os.WriteFile(path, data, permission)
+	if err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
+
+	return nil
+}

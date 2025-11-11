@@ -3,6 +3,8 @@ package flow
 import (
 	"context"
 	"fmt"
+	"log"
+	"time"
 
 	"github.com/neatflowcv/cepher/internal/pkg/client"
 	"github.com/neatflowcv/cepher/internal/pkg/domain"
@@ -71,4 +73,45 @@ func (s *Service) ListClusters(ctx context.Context) ([]*Cluster, error) {
 	}
 
 	return NewClusters(clusters), nil
+}
+
+// RefreshCluster refreshes the cluster status
+// returns true if the cluster status is ok.
+func (s *Service) RefreshCluster(ctx context.Context, id string, now time.Time) (bool, error) {
+	cluster, err := s.repository.GetCluster(ctx, id)
+	if err != nil {
+		return false, fmt.Errorf("failed to get cluster: %w", err)
+	}
+
+	client, err := s.factory.NewClient(ctx, cluster)
+	if err != nil {
+		return false, fmt.Errorf("failed to create client: %w", err)
+	}
+
+	var changedCluster *domain.Cluster
+
+	status, detail, err := client.HealthCheck(ctx)
+	if err != nil {
+		// client로 부터 상태를 가져오지 못하면, 상태를 Unknown으로 설정하고 계속 진행한다.
+		log.Printf("failed to health check cluster %s: %v", id, err)
+
+		status = domain.ClusterStatusUnknown
+		detail = ""
+	}
+
+	changedCluster, err = cluster.SetStatus(status, detail, now)
+	if err != nil {
+		return false, fmt.Errorf("failed to set status: %w", err)
+	}
+
+	if cluster == changedCluster {
+		return changedCluster.IsOK(), nil
+	}
+
+	err = s.repository.UpdateCluster(ctx, changedCluster)
+	if err != nil {
+		return false, fmt.Errorf("failed to update cluster: %w", err)
+	}
+
+	return changedCluster.IsOK(), nil
 }

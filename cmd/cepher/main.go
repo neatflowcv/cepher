@@ -94,7 +94,7 @@ func main() {
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatalf("failed to get home directory: %v", err)
+		log.Panicf("failed to get home directory: %v", err)
 	}
 
 	storagePath := filepath.Join(homeDir, ".local/share/cepher")
@@ -108,16 +108,21 @@ func main() {
 
 	repository := file.NewRepository(storagePath)
 	service := flow.NewService(ulid.NewGenerator(), core.NewFactory(), repository)
-	handler := NewHandler(service)
+
+	handler, err := NewHandler(service)
+	if err != nil {
+		log.Panicf("failed to create handler: %v", err)
+	}
+	defer handler.Close()
 
 	server := &http.Server{ //nolint:exhaustruct
 		ReadHeaderTimeout: timeout,
 		Addr:              ":8080",
-		Handler:           handler,
+		Handler:           handler.Get(),
 	}
 
 	err = server.ListenAndServe()
 	if err != nil {
-		log.Fatal(err)
+		log.Panicf("failed to start server: %v", err)
 	}
 }
