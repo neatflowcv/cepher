@@ -30,6 +30,7 @@ func (s *Service) RegisterCluster(ctx context.Context, registerCluster *Register
 	cluster, err := domain.NewCluster(
 		id, registerCluster.Name, registerCluster.Hosts, registerCluster.Key,
 		domain.ClusterStatusUnknown, registerCluster.Now,
+		"",
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create cluster: %w", err)
@@ -40,12 +41,12 @@ func (s *Service) RegisterCluster(ctx context.Context, registerCluster *Register
 		return nil, fmt.Errorf("failed to create client: %w", err)
 	}
 
-	status, err := client.HealthCheck(ctx)
+	status, detail, err := client.HealthCheck(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to health check: %w", err)
 	}
 
-	cluster, err = cluster.SetStatus(status, registerCluster.Now)
+	cluster, err = cluster.SetStatus(status, detail, registerCluster.Now)
 	if err != nil {
 		return nil, fmt.Errorf("failed to set status: %w", err)
 	}

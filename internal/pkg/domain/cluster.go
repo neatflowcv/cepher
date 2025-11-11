@@ -13,6 +13,7 @@ type Cluster struct {
 	key         string
 	status      ClusterStatus
 	lastBadTime time.Time
+	detail      string
 }
 
 func NewCluster(
@@ -22,6 +23,7 @@ func NewCluster(
 	key string,
 	status ClusterStatus,
 	lastBadTime time.Time,
+	detail string,
 ) (*Cluster, error) {
 	ret := Cluster{
 		id:          id,
@@ -30,6 +32,7 @@ func NewCluster(
 		key:         key,
 		status:      status,
 		lastBadTime: lastBadTime,
+		detail:      detail,
 	}
 
 	err := ret.validate()
@@ -40,7 +43,7 @@ func NewCluster(
 	return &ret, nil
 }
 
-func (c *Cluster) SetStatus(status ClusterStatus, now time.Time) (*Cluster, error) {
+func (c *Cluster) SetStatus(status ClusterStatus, detail string, now time.Time) (*Cluster, error) {
 	if now.After(c.lastBadTime) {
 		return nil, InvalidParameterError("lastBadTime")
 	}
@@ -50,6 +53,9 @@ func (c *Cluster) SetStatus(status ClusterStatus, now time.Time) (*Cluster, erro
 	ret.status = status
 	if !status.isHealthy() {
 		ret.lastBadTime = now
+		ret.detail = detail
+	} else {
+		ret.detail = ""
 	}
 
 	err := ret.validate()
@@ -96,6 +102,10 @@ func (c *Cluster) LastBadTime() time.Time {
 	return c.lastBadTime
 }
 
+func (c *Cluster) Detail() string {
+	return c.detail
+}
+
 func (c *Cluster) validate() error {
 	if c.id == "" {
 		return InvalidParameterError("id")
@@ -136,6 +146,7 @@ func (c *Cluster) clone() *Cluster {
 		key:         c.key,
 		status:      c.status,
 		lastBadTime: c.lastBadTime,
+		detail:      c.detail,
 	}
 }
 

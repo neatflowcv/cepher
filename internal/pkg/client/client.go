@@ -13,5 +13,5 @@ type Factory interface {
 type Client interface {
 	Close()
 
-	HealthCheck(ctx context.Context) (domain.ClusterStatus, error)
+	HealthCheck(ctx context.Context) (domain.ClusterStatus, string, error)
 }
